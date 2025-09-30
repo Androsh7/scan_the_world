@@ -57,4 +57,5 @@ nunit-*.xml
 .vscode/
 
 # Project
+out_data/
 ip_list.txt
