@@ -53,7 +53,7 @@ namespace ScanTheWorld
 
             // Ensure output file exists
             Directory.CreateDirectory("out_data");
-            File.WriteAllText("out_data/results.csv", "ip,hostname,status_code,server,headers\n");
+            File.WriteAllText("out_data/results.csv", "IP,Hostname,Status_code,Server,X-Powered-By,Headers\n");
 
             // Create handler to ignore SSL certificate errors
             SocketsHttpHandler http_handler = new SocketsHttpHandler
@@ -175,12 +175,21 @@ namespace ScanTheWorld
                     // Write result to write_lines
                     HttpResult result = http_task.Result;
                     string headersJson = System.Text.Json.JsonSerializer.Serialize(result.response?.Headers?.ToDictionary(h => h.Key, h => h.Value));
+
+                    // Remove "Server" and "X-Powered-By" from headersJson
+                    var filteredHeaders = result.response?.Headers?
+                        .Where(h => h.Key != "Server" && h.Key != "X-Powered-By")
+                        .ToDictionary(h => h.Key, h => h.Value);
+
+                    string filteredHeadersJson = System.Text.Json.JsonSerializer.Serialize(filteredHeaders);
+
                     write_lines.Add(
                         $"\"{result.dns_result.ip}\"," +
                         $"\"{result.dns_result.hostname}\"," +
                         $"\"{(result.response != null ? ((int)result.response.StatusCode).ToString() : "")}\"," +
                         $"\"{(result.response != null && result.response.Headers.Contains("Server") ? string.Join(";", result.response.Headers.GetValues("Server")) : "")}\"," +
-                        $"\"{headersJson.Replace("\"", "\"\"")}\""
+                        $"\"{(result.response != null && result.response.Headers.Contains("X-Powered-By") ? string.Join(";", result.response.Headers.GetValues("X-Powered-By")) : "")}\"," +
+                        $"\"{filteredHeadersJson.Replace("\"", "\"\"")}\""
                     );
                     http_tasks.Remove(http_task);
                 }
